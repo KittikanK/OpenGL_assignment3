@@ -48,7 +48,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 #pragma region DefineShapes
 struct{
-    Mesh* xyzStar;
+    Mesh 
+        *xyzStar,
+        *square1;
 } Shapes;
 #pragma endregion
 
@@ -64,13 +66,46 @@ int main()
     GLuint uniformModel = 0;
     GLuint uniformProjection = 0;
     GLuint uniformView = 0;
+
+    //time
+    GLfloat currentTime = glfwGetTime();
+    GLfloat elapsedTime = 0.0f;
+    GLfloat lastTime = currentTime;
     #pragma endregion
-    
+
+
+    GLint grid[40][40];
+    for (int i = 0; i < 40; i++)
+    {
+        for (int j = 0; j < 40; j++)
+        {
+            grid[i][j] = 1;
+        }
+    }
+
     #pragma region CreateSprites
 
     Sprite* centralStar = new Sprite(Shapes.xyzStar);
     centralStar->position = glm::vec3(0.0f, 0.0f, 0.0f);
     spriteList.push_back(centralStar);
+
+    float gap = 0.12f;
+    float sqrSize = 2.0f;
+    
+    for (int i = 0; i < 40; i++)
+    {
+        for (int j = 0; j < 40; j++)
+        {
+            if(grid[i][j] == 1)
+            {
+                Sprite* newSprite = new Sprite(Shapes.square1);
+                newSprite->position = glm::vec3(i*(sqrSize+gap), 0.0f, j*(sqrSize+gap));
+                spriteList.push_back(newSprite);
+            }
+        }
+    }
+
+    
 
     #pragma endregion
 
@@ -91,42 +126,62 @@ int main()
     glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 2.0f);    
     glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 targetDirection = glm::normalize(cameraTarget-cameraPos);
+    glm::vec3 direction = glm::vec3(1.0f, 0.0f, 0.0f);
+    
+    GLfloat cameraSpeed = 10.0f;
 
-    glm::vec3 cameraDirection = glm::normalize(cameraTarget-cameraPos);
-    glm::vec3 cameraRight = glm::normalize(glm::cross(cameraDirection, up));
-    glm::vec3 cameraUp = glm::normalize(glm::cross(cameraRight, cameraDirection));
+    // rotate direction to targetDirection
+    float angle = acos(glm::dot(direction, targetDirection));
+    glm::vec3 axis = glm::cross(direction, targetDirection);
+    glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), angle, axis);
+
+    glm::vec3 cameraDirection;
+    glm::vec3 cameraRight;
+    glm::vec3 cameraUp;
 
     #pragma endregion
 
 
+    glfwSetInputMode(mainWindow.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(mainWindow.getWindow() , mouse_callback);
     //Loop until window closed
     while (!mainWindow.getShouldClose())
     {
+        #pragma region CalculateTime
+        currentTime = glfwGetTime();
+        elapsedTime = currentTime - lastTime;
+        lastTime = currentTime;
+        #pragma endregion
+
         #pragma region EventHandling
         glfwPollEvents();
-        
-        //glm::vec3 direction = cameraDirection;
-        //printf("%f %f %f\n", pitch, yaw, 0.0f);
-        // direction.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw)) * direction.x;
-        // direction.y = cos(glm::radians(yaw)) * direction.y;
-        // direction.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw)) * direction.z;
-        //printf("%f %f %f\n", direction.x, direction.y, direction.z);
-        
 
-        // cameraDirection = glm::normalize(direction);
-        // cameraRight = glm::normalize(glm::cross(cameraDirection, up));
-        // cameraUp = glm::normalize(glm::cross(cameraRight, cameraDirection));
+        direction.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+        direction.y = sin(glm::radians(pitch));
+        direction.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+
+        // tranform direction with rotation matrix
+        direction = glm::vec3(rotation * glm::vec4(direction, 0.0f));
+
+        cameraDirection = glm::normalize(direction);
+        cameraRight = glm::normalize(glm::cross(cameraDirection, up));
+        cameraUp = glm::normalize(glm::cross(cameraRight, cameraDirection));
         //Get + Handle user input events
 
         if(glfwGetKey(mainWindow.getWindow(),GLFW_KEY_W) == GLFW_PRESS )
-            cameraPos += cameraDirection * 0.01f;
+            cameraPos += cameraDirection * cameraSpeed * elapsedTime;
         if(glfwGetKey(mainWindow.getWindow(),GLFW_KEY_S) == GLFW_PRESS )
-            cameraPos -= cameraDirection * 0.01f;
+            cameraPos -= cameraDirection * cameraSpeed * elapsedTime;
         if(glfwGetKey(mainWindow.getWindow(),GLFW_KEY_D) == GLFW_PRESS )
-            cameraPos += cameraRight * 0.01f;
+            cameraPos += cameraRight * cameraSpeed * elapsedTime;
         if(glfwGetKey(mainWindow.getWindow(),GLFW_KEY_A) == GLFW_PRESS )
-            cameraPos -= cameraRight * 0.01f;
+            cameraPos -= cameraRight * cameraSpeed * elapsedTime;
+        if(glfwGetKey(mainWindow.getWindow(),GLFW_KEY_SPACE) == GLFW_PRESS )
+            cameraPos += cameraUp * cameraSpeed * elapsedTime;
+        if(glfwGetKey(mainWindow.getWindow(),GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS )
+            cameraPos -= cameraUp * cameraSpeed * elapsedTime;
+
 
         #pragma endregion
     
@@ -162,7 +217,7 @@ int main()
 
         #pragma endregion
         
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < spriteList.size(); i++)
         {
             spriteList[i]->Draw(uniformModel);
         }
@@ -177,8 +232,8 @@ int main()
 }
 
 void CreateShape()
-{
-    GLfloat vertices[] =
+{   
+    GLfloat xyzStar_v[] =
     {
         1.0f, 0.0f, 0.0f,  // 0
         0.0f, 1.0f, 0.0f,  // 1
@@ -202,7 +257,7 @@ void CreateShape()
 
     };
 
-    unsigned int indices[] = 
+    unsigned int xyzStar_i[] = 
     {
         8, 1, 10,
         10, 1, 6,
@@ -239,8 +294,32 @@ void CreateShape()
     };
 
     Shapes.xyzStar = new Mesh();
-    Shapes.xyzStar->CreateMesh(vertices, indices, 54, 96);
+    Shapes.xyzStar->CreateMesh(xyzStar_v, xyzStar_i, 54, 96);
 
+    GLfloat square1_v[] =
+    {
+        -1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        1.0f, -1.0f,  1.0f,
+        1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+    };
+
+    unsigned int square1_i[]=
+    {
+        0, 1, 3, 3, 1, 2,
+	    1, 5, 2, 2, 5, 6,
+	    5, 4, 6, 6, 4, 7,
+	    4, 0, 7, 7, 0, 3,
+	    3, 2, 7, 7, 2, 6,
+	    4, 5, 0, 0, 5, 1    
+    };
+    
+    Shapes.square1 = new Mesh();
+    Shapes.square1->CreateMesh(square1_v, square1_i, 8*3, 6*6);
 }
 
 void CreateShaders()
@@ -268,5 +347,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     yaw += xoffset;
     pitch += yoffset;
 
+    if(pitch > 89.0f)
+        pitch = 89.0f;
+    if(pitch < -89.0f)
+        pitch = -89.0f;
 }
 
