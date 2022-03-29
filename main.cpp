@@ -50,7 +50,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 struct{
     Mesh 
         *xyzStar,
-        *square1;
+        *square1,
+        *light;
 } Shapes;
 #pragma endregion
 
@@ -66,47 +67,13 @@ int main()
     GLuint uniformModel = 0;
     GLuint uniformProjection = 0;
     GLuint uniformView = 0;
+    GLuint uniformLightColor = 0;
+    GLuint uniformLightPos = 0;
 
     //time
     GLfloat currentTime = glfwGetTime();
     GLfloat elapsedTime = 0.0f;
     GLfloat lastTime = currentTime;
-    #pragma endregion
-
-
-    GLint grid[40][40];
-    for (int i = 0; i < 40; i++)
-    {
-        for (int j = 0; j < 40; j++)
-        {
-            grid[i][j] = 1;
-        }
-    }
-
-    #pragma region CreateSprites
-
-    Sprite* centralStar = new Sprite(Shapes.xyzStar);
-    centralStar->position = glm::vec3(0.0f, 0.0f, 0.0f);
-    spriteList.push_back(centralStar);
-
-    float gap = 0.12f;
-    float sqrSize = 2.0f;
-    
-    for (int i = 0; i < 40; i++)
-    {
-        for (int j = 0; j < 40; j++)
-        {
-            if(grid[i][j] == 1)
-            {
-                Sprite* newSprite = new Sprite(Shapes.square1);
-                newSprite->position = glm::vec3(i*(sqrSize+gap), 0.0f, j*(sqrSize+gap));
-                spriteList.push_back(newSprite);
-            }
-        }
-    }
-
-    
-
     #pragma endregion
 
     #pragma region Camera Setup
@@ -141,7 +108,49 @@ int main()
     glm::vec3 cameraUp;
 
     #pragma endregion
+    
+    #pragma region light
+    glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    glm::vec3 lightPos = glm::vec3(4.0f, 6.0f, 5.0f);
+    Sprite *lightSprite = new Sprite(Shapes.light);
+    lightSprite->position = lightPos;
+    lightSprite->scale = glm::vec3(0.1f, 0.1f, 0.1f);
+    #pragma endregion
 
+    GLint grid[40][40];
+    for (int i = 0; i < 40; i++)
+    {
+        for (int j = 0; j < 40; j++)
+        {
+            grid[i][j] = 1;
+        }
+    }
+
+    #pragma region CreateSprites
+
+    // Sprite* center = new Sprite(Shapes.square1);
+    // center->position = glm::vec3(0.0f, 0.0f, 0.0f);
+    // spriteList.push_back(center);
+
+    float sqrSize = 2.0f;
+    
+    for (int i = 0; i < 40; i++)
+    {
+        for (int j = 0; j < 40; j++)
+        {
+            if(grid[i][j] == 1)
+            {
+                Sprite* newSprite = new Sprite(Shapes.square1);
+                newSprite->position = glm::vec3(i*(sqrSize), 0.0f, j*(sqrSize));
+                newSprite->scale = glm::vec3(0.98f, 0.98f, 0.98f);
+                spriteList.push_back(newSprite);
+            }
+        }
+    }
+
+    
+
+    #pragma endregion
 
     glfwSetInputMode(mainWindow.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(mainWindow.getWindow() , mouse_callback);
@@ -189,16 +198,16 @@ int main()
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //draw here
         shaderList[0].UseShader();
         uniformModel = shaderList[0].GetUniformLocation("model");
         uniformView = shaderList[0].GetUniformLocation("view");
         uniformProjection = shaderList[0].GetUniformLocation("projection");
+        uniformLightColor = shaderList[0].GetUniformLocation("lightColor");
+        uniformLightPos = shaderList[0].GetUniformLocation("lightPosition");
 
         #pragma region Camera
         
         glm::mat4 view (1.0f);
-
         glm::mat4 cameraPosMat (1.0f);
         cameraPosMat[0][3] = -cameraPos.x;
         cameraPosMat[1][3] = -cameraPos.y;
@@ -212,10 +221,15 @@ int main()
         //view= cameraRotateMat * cameraPosMat;
         view = glm::lookAt(cameraPos, cameraDirection + cameraPos, up); 
 
-        glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
 
         #pragma endregion
+        
+        glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniform4f(uniformLightColor, lightColor.x, lightColor.y, lightColor.z, 1.0f);
+        glUniform3f(uniformLightPos, lightPos.x, lightPos.y, lightPos.z);
+
+        lightSprite->Draw(uniformModel);
         
         for (int i = 0; i < spriteList.size(); i++)
         {
@@ -235,25 +249,25 @@ void CreateShape()
 {   
     GLfloat xyzStar_v[] =
     {
-        1.0f, 0.0f, 0.0f,  // 0
-        0.0f, 1.0f, 0.0f,  // 1
-        0.0f, 0.0f, 1.0f,  // 2
-        -1.0f, 0.0f, 0.0f, // 3
-        0.0f, -1.0f, 0.0f, // 4
-        0.0f, 0.0f, -1.0f, // 5
+        1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+        -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
         
-         0.25f,  0.25f, 0.0f,  // 6 x y
-         0.25f, -0.25f, 0.0f, // 7 x -y
-        -0.25f,  0.25f, 0.0f, // 8 -x y
-        -0.25f, -0.25f, 0.0f, // 9 -x -y
-         0.0f, 0.25f, 0.25f,  // 10 y z
-         0.0f, 0.25f,-0.25f, // 11 y -z
-         0.0f,-0.25f, 0.25f, // 12 -y z
-         0.0f,-0.25f,-0.25f,// 13 -y -z
-         0.25f, 0.0f,  0.25f,  // 14 x z
-         0.25f, 0.0f, -0.25f, // 15 x -z
-        -0.25f, 0.0f,  0.25f, // 16 -x z
-        -0.25f, 0.0f, -0.25f,// 17 -x -z
+         0.25f,  0.25f, 0.0f,  1.0f, 0.0f, 1.0f,
+         0.25f, -0.25f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.25f,  0.25f, 0.0f, 1.0f, 1.0f, 0.0f,
+        -0.25f, -0.25f, 0.0f, 1.0f, 1.0f, 0.0f,
+         0.0f, 0.25f, 0.25f,  1.0f, 0.0f, 1.0f,
+         0.0f, 0.25f,-0.25f, 0.0f, 1.0f, 1.0f,
+         0.0f,-0.25f,-0.25f, 1.0f, 1.0f, 0.0f,
+         0.0f,-0.25f, 0.25f, 1.0f, 0.0f, 1.0f,
+         0.25f, 0.0f,  0.25f,  1.0f, 1.0f, 0.0f,
+         0.25f, 0.0f, -0.25f, 0.0f, 1.0f, 1.0f,
+        -0.25f, 0.0f,  0.25f, 1.0f, 1.0f, 0.0f,
+        -0.25f, 0.0f, -0.25f, 1.0f, 0.0f, 1.0f,
 
     };
 
@@ -294,39 +308,132 @@ void CreateShape()
     };
 
     Shapes.xyzStar = new Mesh();
-    Shapes.xyzStar->CreateMesh(xyzStar_v, xyzStar_i, 54, 96);
+    Shapes.xyzStar->CreateMesh(xyzStar_v, xyzStar_i, 18*6, 96);
 
     GLfloat square1_v[] =
     {
-        -1.0f, -1.0f, -1.0f,
-        1.0f, -1.0f, -1.0f,
-        1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,
-        -1.0f, -1.0f,  1.0f,
-        1.0f, -1.0f,  1.0f,
-        1.0f,  1.0f,  1.0f,
-        -1.0f,  1.0f,  1.0f,
+        /*Posiion  */           /*Color*/               /*Normal*/
+        // up
+        1.0f, 1.0f, 1.0f,       0.4f, 0.85f, 1.0f,      0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, -1.0f,      0.4f, 0.85f, 1.0f,      0.0f, 1.0f,-0.0f,
+        -1.0f, 1.0f, -1.0f,     0.4f, 0.85f, 1.0f,     -0.0f, 1.0f,-0.0f,
+        -1.0f, 1.0f, 1.0f,      0.4f, 0.85f, 1.0f,     -0.0f, 1.0f, 0.0f,
+        
+        // down
+        1.0f, -1.0f, 1.0f,      0.4f, 0.85f, 1.0f,      0.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, -1.0f,     0.4f, 0.85f, 1.0f,      0.0f, -1.0f,-0.0f,     
+        -1.0f, -1.0f, -1.0f,    0.4f, 0.85f, 1.0f,     -0.0f, -1.0f,-0.0f,   
+        -1.0f, -1.0f, 1.0f,     0.4f, 0.85f, 1.0f,     -0.0f, -1.0f, 0.0f,   
+
+        // left
+        -1.0f, 1.0f, 1.0f,      0.4f, 0.85f, 1.0f,      -1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f, -1.0f,     0.4f, 0.85f, 1.0f,      -1.0f, 0.0f,-0.0f,
+        -1.0f, -1.0f, -1.0f,    0.4f, 0.85f, 1.0f,      -1.0f,-0.0f,-0.0f,
+        -1.0f, -1.0f, 1.0f,     0.4f, 0.85f, 1.0f,      -1.0f,-0.0f, 0.0f,
+
+        // right
+        1.0f, 1.0f, 1.0f,       0.4f, 0.85f, 1.0f,      1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, -1.0f,      0.4f, 0.85f, 1.0f,      1.0f, 0.0f, 0.0f,   
+        1.0f, -1.0f, -1.0f,     0.4f, 0.85f, 1.0f,      1.0f, 0.0f, 0.0f,   
+        1.0f, -1.0f, 1.0f,      0.4f, 0.85f, 1.0f,      1.0f, 0.0f, 0.0f,   
+
+        // front
+        1.0f, 1.0f, 1.0f,       0.4f, 0.85f, 1.0f,      0.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, 1.0f,      0.4f, 0.85f, 1.0f,      0.0f,-0.0f, 1.0f,   
+        -1.0f, -1.0f, 1.0f,     0.4f, 0.85f, 1.0f,     -0.0f,-0.0f, 1.0f,   
+        -1.0f, 1.0f, 1.0f,      0.4f, 0.85f, 1.0f,     -0.0f, 0.0f, 1.0f,   
+
+        // back
+        1.0f, 1.0f, -1.0f,      0.4f, 0.85f, 1.0f,      0.0f, 0.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,     0.4f, 0.85f, 1.0f,      0.0f,-0.0f, -1.0f,       
+        -1.0f, -1.0f, -1.0f,    0.4f, 0.85f, 1.0f,     -0.0f,-0.0f, -1.0f,       
+        -1.0f, 1.0f, -1.0f,     0.4f, 0.85f, 1.0f,     -0.0f, 0.0f, -1.0f,       
     };
 
     unsigned int square1_i[]=
     {
-        0, 1, 3, 3, 1, 2,
-	    1, 5, 2, 2, 5, 6,
-	    5, 4, 6, 6, 4, 7,
-	    4, 0, 7, 7, 0, 3,
-	    3, 2, 7, 7, 2, 6,
-	    4, 5, 0, 0, 5, 1    
+        0, 1, 2,
+        2, 3, 0,
+        4, 5, 6,
+        6, 7, 4,
+        8, 9, 10,
+        10, 11, 8,
+        12, 13, 14,
+        14, 15, 12,
+        16, 17, 18,
+        18, 19, 16,
+        20, 21, 22,
+        22, 23, 20,   
     };
     
     Shapes.square1 = new Mesh();
-    Shapes.square1->CreateMesh(square1_v, square1_i, 8*3, 6*6);
+    Shapes.square1->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+
+    GLfloat light_v[] =
+    {
+        // up
+        1.0f, 1.0f, 1.0f,       1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, -1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,      
+        -1.0f, 1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,         
+        -1.0f, 1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,         
+        
+        // down
+        1.0f, -1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,  
+        1.0f, -1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,     
+        -1.0f, -1.0f, -1.0f,    1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,     
+        -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,     
+
+        // left
+        -1.0f, 1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       -1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       -1.0f, 0.0f, 0.0f,    
+        -1.0f, -1.0f, -1.0f,    1.0f, 1.0f, 1.0f,       -1.0f, 0.0f, 0.0f,    
+        -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f,       -1.0f, 0.0f, 0.0f,    
+
+        // right
+        1.0f, 1.0f, 1.0f,       1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f, 
+        1.0f, 1.0f, -1.0f,      1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f,    
+        1.0f, -1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f,    
+        1.0f, -1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f,    
+
+        // front
+        1.0f, 1.0f, 1.0f,       1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,  
+        1.0f, -1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,     
+        -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,     
+        -1.0f, 1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,     
+
+        // back
+        1.0f, 1.0f, -1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f, 
+        1.0f, -1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f,   
+        -1.0f, -1.0f, -1.0f,    1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f,   
+        -1.0f, 1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f,   
+    };
+
+    unsigned int light_i[] =
+    {
+        0, 1, 2,
+        2, 3, 0,
+        4, 5, 6,
+        6, 7, 4,
+        8, 9, 10,
+        10, 11, 8,
+        12, 13, 14,
+        14, 15, 12,
+        16, 17, 18,
+        18, 19, 16,
+        20, 21, 22,
+        22, 23, 20,   
+    };
+
+    Shapes.light = new Mesh();
+    Shapes.light->CreateMesh(light_v, light_i, 24*9, 12*3);
+    
 }
 
 void CreateShaders()
 {
-    Shader* shader1 = new Shader();
-    shader1->CreateFromFiles(vShader, fShader);
-    shaderList.push_back(*shader1);
+    Shader* basicShader = new Shader();
+    basicShader->CreateFromFiles(vShader, fShader);
+    shaderList.push_back(*basicShader);
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)

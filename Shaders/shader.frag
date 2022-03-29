@@ -1,10 +1,24 @@
 #version 330
 
-in vec4 vColor;
 out vec4 colour;
 
+in vec4 vColor;
+in vec3 vNormal;
+in vec3 vPosition;
+
+
+uniform vec4 lightColor;
+uniform vec3 lightPosition;
+uniform vec3 cameraPosition;
 
 void main()
 {
-    colour = vColor; 
+    float ambientStrength = 0.2f;
+
+
+    vec3 lightDir = normalize(lightPosition - vPosition);
+    vec3 normal = normalize(vNormal);
+    float diffuse = max(dot(lightDir, normal), 0.0);
+
+    colour = vColor * lightColor * (diffuse+ambientStrength); 
 }
