@@ -12,11 +12,11 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
-class Sprite
+class Block
 {
 public:
-    Sprite(Mesh* shape);
-    ~Sprite();
+    Block(Mesh* shape);
+    ~Block();
 
     void Draw(GLuint uniformModel);
 

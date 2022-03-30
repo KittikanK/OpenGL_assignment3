@@ -1,6 +1,6 @@
-#include "Sprite.h"
+#include "Block.h"
 
-Sprite::Sprite(Mesh* shape)
+Block::Block(Mesh* shape)
 {
     mesh = shape;
     
@@ -9,12 +9,12 @@ Sprite::Sprite(Mesh* shape)
     scale = glm::vec3(1.0f, 1.0f, 1.0f);
 }
 
-Sprite::~Sprite()
+Block::~Block()
 {
     mesh = NULL;
 }
 
-void Sprite::Draw(GLuint uniformModel)
+void Block::Draw(GLuint uniformModel)
 {
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, position);

@@ -20,7 +20,7 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
-#include "Sprite.h"
+#include "Block.h"
 
 #pragma endregion
 
@@ -32,7 +32,7 @@ float yaw = 0.0f, pitch = 0.0f;
 Window mainWindow;
 std::vector<Mesh*> meshList;
 std::vector<Shader> shaderList;
-std::vector<Sprite*> spriteList;
+std::vector<Block*> spriteList;
 //Vertex Shader
 static const char* vShader = "Shaders/shader.vert";
 //Fragment Shader
@@ -43,14 +43,27 @@ static const char* fShader = "Shaders/shader.frag";
 void CreateShape();
 void CreateShaders();
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-
+glm::vec3 HexColor2RGB(int hexColor);
+template<std::size_t L, std::size_t R,std::size_t C>
+void createBlock(GLint (&myArray)[L][R][C],glm::vec3 position, glm::vec3 scale);
+template<std::size_t L, std::size_t R,std::size_t C>
+void createBlock(GLint (&myArray)[L][R][C], glm::vec3 position);
 #pragma endregion
 
 #pragma region DefineShapes
 struct{
     Mesh 
         *xyzStar,
-        *square1,
+        *square1_cyan,
+        *square1_floor,
+
+        *square1_blue,
+        *square1_yellow,
+        *square1_red,
+        *square1_white,
+        *square1_black,
+        *square1_navy,
+        *square1_flesh,
         *light;
 } Shapes;
 #pragma endregion
@@ -69,6 +82,7 @@ int main()
     GLuint uniformView = 0;
     GLuint uniformLightColor = 0;
     GLuint uniformLightPos = 0;
+    GLuint uniformCameraPos = 0;
 
     //time
     GLfloat currentTime = glfwGetTime();
@@ -110,45 +124,252 @@ int main()
     #pragma endregion
     
     #pragma region light
-    glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    glm::vec3 lightPos = glm::vec3(4.0f, 6.0f, 5.0f);
-    Sprite *lightSprite = new Sprite(Shapes.light);
+    glm::vec4 lightColor = glm::vec4(HexColor2RGB(0xFFFFFF), 1.0f);
+    glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 35.0f);
+    Block *lightSprite = new Block(Shapes.light);
     lightSprite->position = lightPos;
     lightSprite->scale = glm::vec3(0.1f, 0.1f, 0.1f);
     #pragma endregion
 
-    GLint grid[40][40];
-    for (int i = 0; i < 40; i++)
+    #pragma region character
+    GLint nobita[15][6][7]={
+        { //1
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,6,0,6,0,0},
+        {0,0,6,0,6,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //2
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,4,0,4,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //3
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,7,0,7,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //4
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,7,0,7,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //5
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,7,6,6,6,7,0},
+        {0,0,6,6,6,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //6
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,7,2,2,2,7,0},
+        {0,0,2,2,2,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //7
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,2,2,2,2,2,0},
+        {0,0,2,2,2,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //8 
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,4,4,4,0,0},
+        {0,0,4,4,4,0,0},
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //9
+        {0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0},
+        {0,7,7,7,7,7,0},
+        {0,7,7,7,7,7,0},
+        {0,7,7,7,7,7,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //10
+        {0,0,0,0,0,0,0},
+        {0,5,5,5,5,5,0},
+        {0,7,7,7,7,7,0},
+        {0,7,7,7,7,7,0},
+        {0,7,7,7,7,7,0},
+        {0,0,0,7,0,0,0}
+        },
+        { //11
+        {0,0,5,5,5,0,0},
+        {0,5,5,5,5,5,0},
+        {7,7,7,7,7,7,7},
+        {0,4,7,7,7,4,0},
+        {0,0,5,4,5,0,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //12
+        {0,5,5,5,5,5,0},
+        {0,5,5,5,5,5,0},
+        {0,5,7,7,7,5,0},
+        {0,4,7,7,7,4,0},
+        {0,0,5,4,5,0,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //13
+        {0,5,5,5,5,5,0},
+        {0,5,5,5,5,5,0},
+        {0,7,7,7,7,7,0},
+        {0,4,7,7,7,4,0},
+        {0,0,4,4,4,0,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //14
+        {0,5,5,5,5,5,0},
+        {0,5,5,5,5,5,0},
+        {0,5,5,5,5,5,0},
+        {0,5,5,5,5,5,0},
+        {0,5,5,5,5,5,0},
+        {0,0,0,0,0,0,0}
+        },
+        { //15
+        {0,0,5,5,5,0,0},
+        {0,5,5,5,5,5,0},
+        {0,5,5,5,5,5,0},
+        {0,5,5,5,5,5,0},
+        {0,0,5,5,5,0,0},
+        {0,0,0,0,0,0,0}
+        }
+    };
+
+    GLint doraemon[12][6][9] = {
+        {// 1
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,4,4,0,4,4,0,0},
+        {0,0,4,4,0,4,4,0,0},
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0}
+        },
+        { //2
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,1,1,1,1,1,0,0},
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0}
+        },
+        { //3
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0},
+        {0,4,1,1,1,1,1,4,0},
+        {0,0,0,4,4,4,0,0,0},
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0}
+        },
+        { //4
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0},
+        {0,1,1,1,1,1,1,1,0},
+        {0,0,4,4,4,4,4,0,0},
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0}
+        },
+        { //5
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0},
+        {0,3,3,3,3,3,3,3,0},
+        {0,0,3,3,3,3,3,0,0},
+        {0,0,0,0,2,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0}
+        },
+        { //6
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,1,1,1,0,0,0},
+        {0,1,1,0,0,0,1,1,0},
+        {0,0,4,0,0,0,4,0,0},
+        {0,0,0,4,4,4,0,0,0},
+        {0,0,0,0,0,0,0,0,0}
+        },
+        { //7
+        {0,0,1,1,1,1,1,0,0},
+        {1,1,1,0,0,0,1,1,1},
+        {1,0,0,0,0,0,0,0,1},
+        {0,4,0,0,0,0,0,4,0},
+        {0,0,4,4,4,4,4,0,0},
+        {0,0,0,0,0,0,0,0,0}
+        },
+        { //8
+        {0,1,1,1,1,1,1,1,0},
+        {1,1,0,0,0,0,0,1,1},
+        {1,0,0,0,0,0,0,0,1},
+        {0,4,0,0,0,0,0,4,0},
+        {0,0,4,4,4,4,4,0,0},
+        {0,0,0,0,3,0,0,0,0}
+        },
+        { //9
+        {0,1,1,1,1,1,1,1,0},
+        {1,1,0,0,0,0,0,1,1},
+        {1,1,0,0,0,0,0,1,1},
+        {0,1,4,0,0,0,4,1,0},
+        {0,0,0,5,4,5,0,0,0},
+        {0,0,0,0,0,0,0,0,0}
+        },
+        { //10
+        {0,1,1,1,1,1,1,1,0},
+        {0,1,0,0,0,0,0,1,0},
+        {0,1,0,0,0,0,0,1,0},
+        {0,1,4,0,0,0,4,1,0},
+        {0,0,0,5,4,5,0,0,0},
+        {0,0,0,0,0,0,0,0,0}
+        },
+        { //11
+        {0,0,1,1,1,1,1,0,0},
+        {0,1,1,1,1,1,1,1,0},
+        {0,1,1,1,1,1,1,1,0},
+        {0,0,1,1,1,1,1,0,0},
+        {0,0,0,4,4,4,0,0,0},
+        {0,0,0,0,0,0,0,0,0}
+        },
+        { //12
+        {0,0,0,1,1,1,0,0,0},
+        {0,0,1,1,1,1,1,0,0},
+        {0,0,1,1,1,1,1,0,0},
+        {0,0,0,1,1,1,0,0,0},
+        {0,0,0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,0,0,0}
+        }
+    };
+    #pragma endregion
+    
+    #pragma region CreateCharecter
+    createBlock(doraemon,glm::vec3(-10.0f,0.0f,0.0f),glm::vec3(1.0f));
+    createBlock(nobita,glm::vec3(0.0f,0.0f,0.0f));
+    
+    int foor[1][100][100];
+    for (int i = 0; i < 30; i++)
     {
-        for (int j = 0; j < 40; j++)
+        for (int j = 0; j < 50; j++)
         {
-            grid[i][j] = 1;
+            foor[0][i][j] = 98;
         }
     }
 
-    #pragma region CreateSprites
-
-    // Sprite* center = new Sprite(Shapes.square1);
-    // center->position = glm::vec3(0.0f, 0.0f, 0.0f);
-    // spriteList.push_back(center);
-
-    float sqrSize = 2.0f;
-    
-    for (int i = 0; i < 40; i++)
-    {
-        for (int j = 0; j < 40; j++)
-        {
-            if(grid[i][j] == 1)
-            {
-                Sprite* newSprite = new Sprite(Shapes.square1);
-                newSprite->position = glm::vec3(i*(sqrSize), 0.0f, j*(sqrSize));
-                newSprite->scale = glm::vec3(0.98f, 0.98f, 0.98f);
-                spriteList.push_back(newSprite);
-            }
-        }
-    }
-
-    
+    createBlock(foor,glm::vec3(-10.0f,-1.0f,0.0f));
+     
 
     #pragma endregion
 
@@ -195,7 +416,8 @@ int main()
         #pragma endregion
     
         //Clear window
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glm::vec3 bgcolor = HexColor2RGB(0x5678B5);
+        glClearColor(bgcolor.x,bgcolor.y,bgcolor.z, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shaderList[0].UseShader();
@@ -204,6 +426,7 @@ int main()
         uniformProjection = shaderList[0].GetUniformLocation("projection");
         uniformLightColor = shaderList[0].GetUniformLocation("lightColor");
         uniformLightPos = shaderList[0].GetUniformLocation("lightPosition");
+        uniformCameraPos = shaderList[0].GetUniformLocation("cameraPosition");
 
         #pragma region Camera
         
@@ -220,7 +443,7 @@ int main()
 
         //view= cameraRotateMat * cameraPosMat;
         view = glm::lookAt(cameraPos, cameraDirection + cameraPos, up); 
-
+        lightPos = glm::vec3(cameraPos.x,cameraPos.y,cameraPos.z);
 
         #pragma endregion
         
@@ -228,6 +451,7 @@ int main()
         glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
         glUniform4f(uniformLightColor, lightColor.x, lightColor.y, lightColor.z, 1.0f);
         glUniform3f(uniformLightPos, lightPos.x, lightPos.y, lightPos.z);
+        glUniform3f(uniformCameraPos, cameraPos.x, cameraPos.y, cameraPos.z);
 
         lightSprite->Draw(uniformModel);
         
@@ -245,167 +469,177 @@ int main()
     return 0;
 }
 
-void CreateShape()
-{   
-    GLfloat xyzStar_v[] =
+#pragma region Square1
+GLfloat square1_v[] =
     {
-        1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-        -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
-        
-         0.25f,  0.25f, 0.0f,  1.0f, 0.0f, 1.0f,
-         0.25f, -0.25f, 0.0f, 0.0f, 1.0f, 1.0f,
-        -0.25f,  0.25f, 0.0f, 1.0f, 1.0f, 0.0f,
-        -0.25f, -0.25f, 0.0f, 1.0f, 1.0f, 0.0f,
-         0.0f, 0.25f, 0.25f,  1.0f, 0.0f, 1.0f,
-         0.0f, 0.25f,-0.25f, 0.0f, 1.0f, 1.0f,
-         0.0f,-0.25f,-0.25f, 1.0f, 1.0f, 0.0f,
-         0.0f,-0.25f, 0.25f, 1.0f, 0.0f, 1.0f,
-         0.25f, 0.0f,  0.25f,  1.0f, 1.0f, 0.0f,
-         0.25f, 0.0f, -0.25f, 0.0f, 1.0f, 1.0f,
-        -0.25f, 0.0f,  0.25f, 1.0f, 1.0f, 0.0f,
-        -0.25f, 0.0f, -0.25f, 1.0f, 0.0f, 1.0f,
-
-    };
-
-    unsigned int xyzStar_i[] = 
-    {
-        8, 1, 10,
-        10, 1, 6,
-        6, 1, 11,
-        11, 1, 8,
-        8, 3, 16,
-        16, 8, 10,
-        10, 2, 16,
-        10, 2, 14,
-        14, 10, 6,
-        6, 0 , 14,
-        6, 0 , 15,
-        15, 6, 11,
-        11, 5, 15,
-        11, 5, 17,
-        17, 11, 8,
-        8, 3, 17,
-        9, 3, 16,
-        16, 9, 12,
-        12, 2, 16,
-        12, 2, 14,
-        14, 12, 7,
-        7, 0, 14,
-        7, 0, 15,
-        15, 7, 13,
-        13, 5, 15,
-        13, 5, 17,
-        17, 13, 9,
-        9, 3, 17,
-        9, 4, 12,
-        12, 4, 7,
-        7, 4, 13,
-        13, 4, 9,
-    };
-
-    Shapes.xyzStar = new Mesh();
-    Shapes.xyzStar->CreateMesh(xyzStar_v, xyzStar_i, 18*6, 96);
-
-    GLfloat square1_v[] =
-    {
-        /*Posiion  */           /*Color*/               /*Normal*/
+        /*Posiion  */           /*Color*/           /*Normal*/
         // up
-        1.0f, 1.0f, 1.0f,       0.4f, 0.85f, 1.0f,      0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, -1.0f,      0.4f, 0.85f, 1.0f,      0.0f, 1.0f,-0.0f,
-        -1.0f, 1.0f, -1.0f,     0.4f, 0.85f, 1.0f,     -0.0f, 1.0f,-0.0f,
-        -1.0f, 1.0f, 1.0f,      0.4f, 0.85f, 1.0f,     -0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 1.0f,       1.0f,1.0f,1.0f,     0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, -1.0f,      1.0f,1.0f,1.0f,     0.0f, 1.0f,-0.0f,
+        -1.0f, 1.0f, -1.0f,     1.0f,1.0f,1.0f,    -0.0f, 1.0f,-0.0f,
+        -1.0f, 1.0f, 1.0f,      1.0f,1.0f,1.0f,    -0.0f, 1.0f, 0.0f,
         
         // down
-        1.0f, -1.0f, 1.0f,      0.4f, 0.85f, 1.0f,      0.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, -1.0f,     0.4f, 0.85f, 1.0f,      0.0f, -1.0f,-0.0f,     
-        -1.0f, -1.0f, -1.0f,    0.4f, 0.85f, 1.0f,     -0.0f, -1.0f,-0.0f,   
-        -1.0f, -1.0f, 1.0f,     0.4f, 0.85f, 1.0f,     -0.0f, -1.0f, 0.0f,   
+        1.0f, -1.0f, 1.0f,      1.0f,1.0f,1.0f,     0.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, -1.0f,     1.0f,1.0f,1.0f,     0.0f, -1.0f,-0.0f,     
+        -1.0f, -1.0f, -1.0f,    1.0f,1.0f,1.0f,    -0.0f, -1.0f,-0.0f,   
+        -1.0f, -1.0f, 1.0f,     1.0f,1.0f,1.0f,    -0.0f, -1.0f, 0.0f,   
 
         // left
-        -1.0f, 1.0f, 1.0f,      0.4f, 0.85f, 1.0f,      -1.0f, 0.0f, 0.0f,
-        -1.0f, 1.0f, -1.0f,     0.4f, 0.85f, 1.0f,      -1.0f, 0.0f,-0.0f,
-        -1.0f, -1.0f, -1.0f,    0.4f, 0.85f, 1.0f,      -1.0f,-0.0f,-0.0f,
-        -1.0f, -1.0f, 1.0f,     0.4f, 0.85f, 1.0f,      -1.0f,-0.0f, 0.0f,
+        -1.0f, 1.0f, 1.0f,      1.0f,1.0f,1.0f,    -1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f, -1.0f,     1.0f,1.0f,1.0f,    -1.0f, 0.0f,-0.0f,
+        -1.0f, -1.0f, -1.0f,    1.0f,1.0f,1.0f,    -1.0f,-0.0f,-0.0f,
+        -1.0f, -1.0f, 1.0f,     1.0f,1.0f,1.0f,    -1.0f,-0.0f, 0.0f,
 
         // right
-        1.0f, 1.0f, 1.0f,       0.4f, 0.85f, 1.0f,      1.0f, 0.0f, 0.0f,
-        1.0f, 1.0f, -1.0f,      0.4f, 0.85f, 1.0f,      1.0f, 0.0f, 0.0f,   
-        1.0f, -1.0f, -1.0f,     0.4f, 0.85f, 1.0f,      1.0f, 0.0f, 0.0f,   
-        1.0f, -1.0f, 1.0f,      0.4f, 0.85f, 1.0f,      1.0f, 0.0f, 0.0f,   
+        1.0f, 1.0f, 1.0f,       1.0f,1.0f,1.0f,      1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, -1.0f,      1.0f,1.0f,1.0f,      1.0f, 0.0f, 0.0f,   
+        1.0f, -1.0f, -1.0f,     1.0f,1.0f,1.0f,      1.0f, 0.0f, 0.0f,   
+        1.0f, -1.0f, 1.0f,      1.0f,1.0f,1.0f,      1.0f, 0.0f, 0.0f,   
 
         // front
-        1.0f, 1.0f, 1.0f,       0.4f, 0.85f, 1.0f,      0.0f, 0.0f, 1.0f,
-        1.0f, -1.0f, 1.0f,      0.4f, 0.85f, 1.0f,      0.0f,-0.0f, 1.0f,   
-        -1.0f, -1.0f, 1.0f,     0.4f, 0.85f, 1.0f,     -0.0f,-0.0f, 1.0f,   
-        -1.0f, 1.0f, 1.0f,      0.4f, 0.85f, 1.0f,     -0.0f, 0.0f, 1.0f,   
+        1.0f, 1.0f, 1.0f,       1.0f,1.0f,1.0f,      0.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, 1.0f,      1.0f,1.0f,1.0f,      0.0f,-0.0f, 1.0f,   
+        -1.0f, -1.0f, 1.0f,     1.0f,1.0f,1.0f,     -0.0f,-0.0f, 1.0f,   
+        -1.0f, 1.0f, 1.0f,      1.0f,1.0f,1.0f,     -0.0f, 0.0f, 1.0f,   
 
         // back
-        1.0f, 1.0f, -1.0f,      0.4f, 0.85f, 1.0f,      0.0f, 0.0f, -1.0f,
-        1.0f, -1.0f, -1.0f,     0.4f, 0.85f, 1.0f,      0.0f,-0.0f, -1.0f,       
-        -1.0f, -1.0f, -1.0f,    0.4f, 0.85f, 1.0f,     -0.0f,-0.0f, -1.0f,       
-        -1.0f, 1.0f, -1.0f,     0.4f, 0.85f, 1.0f,     -0.0f, 0.0f, -1.0f,       
+        1.0f, 1.0f, -1.0f,      1.0f,1.0f,1.0f,      0.0f, 0.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,     1.0f,1.0f,1.0f,      0.0f,-0.0f, -1.0f,       
+        -1.0f, -1.0f, -1.0f,    1.0f,1.0f,1.0f,     -0.0f,-0.0f, -1.0f,       
+        -1.0f, 1.0f, -1.0f,     1.0f,1.0f,1.0f,     -0.0f, 0.0f, -1.0f,       
     };
 
+void setSquare1_Color(glm::vec3 color)
+{
+    for (int i = 3; i < sizeof(square1_v) / sizeof(GLfloat); i += 9)
+    {
+        square1_v[i + 0] = color.x;
+        square1_v[i + 1] = color.y;
+        square1_v[i + 2] = color.z;
+    }
+}
+#pragma endregion
+
+glm::vec3 HexColor2RGB(int hexColor)
+{
+    glm::vec3 color;
+    color.x = ((hexColor >> 16) & 0xFF) / 255.0f;
+    color.y = ((hexColor >> 8) & 0xFF) / 255.0f;
+    color.z = ((hexColor >> 0) & 0xFF) / 255.0f;
+    
+    return color;
+}
+
+void CreateShape()
+{   
     unsigned int square1_i[]=
     {
+        //up
         0, 1, 2,
         2, 3, 0,
+        
         4, 5, 6,
         6, 7, 4,
+        
         8, 9, 10,
         10, 11, 8,
+        
         12, 13, 14,
         14, 15, 12,
+        
         16, 17, 18,
         18, 19, 16,
+        
         20, 21, 22,
         22, 23, 20,   
     };
+
+    glm::vec3 cyan = HexColor2RGB(0x2ae6f7);
+    glm::vec3 green_floor = HexColor2RGB(0xABCA87);
+    glm::vec3 blue = HexColor2RGB(0x0176C3);
+    glm::vec3 yellow = HexColor2RGB(0xE1BD42);
+    glm::vec3 red = HexColor2RGB(0x9A1F22);
+    glm::vec3 white = HexColor2RGB(0xEAEAEA);
+    glm::vec3 black = HexColor2RGB(0x262B2E);
+    glm::vec3 navy = HexColor2RGB(0x31496F);
+    glm::vec3 flesh = HexColor2RGB(0xF1C27D);
     
-    Shapes.square1 = new Mesh();
-    Shapes.square1->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+    setSquare1_Color(cyan);
+    Shapes.square1_cyan = new Mesh();
+    Shapes.square1_cyan->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+
+    setSquare1_Color(green_floor);
+    Shapes.square1_floor = new Mesh();
+    Shapes.square1_floor->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+    
+    setSquare1_Color(blue);
+    Shapes.square1_blue = new Mesh();
+    Shapes.square1_blue->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+
+    setSquare1_Color(yellow);
+    Shapes.square1_yellow = new Mesh();
+    Shapes.square1_yellow->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+
+    setSquare1_Color(red);
+    Shapes.square1_red = new Mesh();
+    Shapes.square1_red->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+
+    setSquare1_Color(white);
+    Shapes.square1_white = new Mesh();
+    Shapes.square1_white->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+
+    setSquare1_Color(black);
+    Shapes.square1_black = new Mesh();
+    Shapes.square1_black->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+
+    setSquare1_Color(navy);
+    Shapes.square1_navy = new Mesh();
+    Shapes.square1_navy->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+
+    setSquare1_Color(flesh);
+    Shapes.square1_flesh = new Mesh();
+    Shapes.square1_flesh->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+
+
 
     GLfloat light_v[] =
     {
         // up
-        1.0f, 1.0f, 1.0f,       1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, -1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,      
-        -1.0f, 1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,         
-        -1.0f, 1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,         
+        1.0f, 1.0f, 1.0f,       1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,
+        1.0f, 1.0f, -1.0f,      1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,      
+        -1.0f, 1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,         
+        -1.0f, 1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,         
         
         // down
-        1.0f, -1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,  
-        1.0f, -1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,     
-        -1.0f, -1.0f, -1.0f,    1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,     
-        -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f,       0.0f, -1.0f, 0.0f,     
+        1.0f, -1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,  
+        1.0f, -1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,     
+        -1.0f, -1.0f, -1.0f,    1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,     
+        -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,     
 
         // left
-        -1.0f, 1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       -1.0f, 0.0f, 0.0f,
-        -1.0f, 1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       -1.0f, 0.0f, 0.0f,    
-        -1.0f, -1.0f, -1.0f,    1.0f, 1.0f, 1.0f,       -1.0f, 0.0f, 0.0f,    
-        -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f,       -1.0f, 0.0f, 0.0f,    
+        -1.0f, 1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f,    
+        -1.0f, -1.0f, -1.0f,    1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f,    
+        -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f,    
 
         // right
-        1.0f, 1.0f, 1.0f,       1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f, 
-        1.0f, 1.0f, -1.0f,      1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f,    
-        1.0f, -1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f,    
-        1.0f, -1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 0.0f,    
+        1.0f, 1.0f, 1.0f,       1.0f, 1.0f, 1.0f,      -1.0f, 0.0f, 0.0f, 
+        1.0f, 1.0f, -1.0f,      1.0f, 1.0f, 1.0f,      -1.0f, 0.0f, 0.0f,    
+        1.0f, -1.0f, -1.0f,     1.0f, 1.0f, 1.0f,      -1.0f, 0.0f, 0.0f,    
+        1.0f, -1.0f, 1.0f,      1.0f, 1.0f, 1.0f,      -1.0f, 0.0f, 0.0f,    
 
         // front
-        1.0f, 1.0f, 1.0f,       1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,  
-        1.0f, -1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,     
-        -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,     
-        -1.0f, 1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,     
+        1.0f, 1.0f, 1.0f,       1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f,  
+        1.0f, -1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f,     
+        -1.0f, -1.0f, 1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f,     
+        -1.0f, 1.0f, 1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f,     
 
         // back
-        1.0f, 1.0f, -1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f, 
-        1.0f, -1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f,   
-        -1.0f, -1.0f, -1.0f,    1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f,   
-        -1.0f, 1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 0.0f, -1.0f,   
+        1.0f, 1.0f, -1.0f,      1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f, 
+        1.0f, -1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,   
+        -1.0f, -1.0f, -1.0f,    1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,   
+        -1.0f, 1.0f, -1.0f,     1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,   
     };
 
     unsigned int light_i[] =
@@ -460,3 +694,99 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
         pitch = -89.0f;
 }
 
+template<std::size_t L, std::size_t R,std::size_t C>
+void createBlock(GLint (&myArray)[L][R][C], glm::vec3 position, glm::vec3 scale)
+{
+    GLfloat length = 1.0f*scale.x;
+    GLfloat width = 1.0f*scale.z;
+    GLfloat height = 1.0f*scale.y;
+    for (int l = 0; l < L; l++)
+    {
+        for (int i = 0; i < R; i++)
+        {
+            for (int j = 0; j < C; j++)
+            {
+                if(myArray[l][i][j] == 0) continue;
+                Block* newSprite = new Block(Shapes.square1_cyan);
+                switch(myArray[l][i][j])
+                {
+                    case 1:
+                        newSprite = new Block(Shapes.square1_blue);
+                        break;
+                    case 2:
+                        newSprite = new Block(Shapes.square1_yellow);
+                        break;
+                    case 3:
+                        newSprite = new Block(Shapes.square1_red);
+                        break;
+                    case 4:
+                        newSprite = new Block(Shapes.square1_white);
+                        break;
+                    case 5:
+                        newSprite = new Block(Shapes.square1_black);
+                        break;
+                    case 6:
+                        newSprite = new Block(Shapes.square1_navy);
+                        break;
+                    case 7:
+                        newSprite = new Block(Shapes.square1_flesh);
+                        break;
+                    
+                }
+                newSprite->position = glm::vec3(j*(width)+position.x, l*(height)+position.y, i*(length)+position.z);
+                newSprite->scale = glm::vec3(0.5f*scale.x, 0.5f*scale.y, 0.5f*scale.z);
+                spriteList.push_back(newSprite);
+            }
+        }
+    }
+}
+
+template<std::size_t L, std::size_t R,std::size_t C>
+void createBlock(GLint (&myArray)[L][R][C], glm::vec3 position)
+{
+    GLfloat length = 1.0f;
+    GLfloat width = 1.0f;
+    GLfloat height = 1.0f;
+    for (int l = 0; l < L; l++)
+    {
+        for (int i = 0; i < R; i++)
+        {
+            for (int j = 0; j < C; j++)
+            {
+                if(myArray[l][i][j] == 0) continue;
+                Block* newSprite = new Block(Shapes.square1_cyan);
+                switch(myArray[l][i][j])
+                {
+                    case 1:
+                        newSprite = new Block(Shapes.square1_blue);
+                        break;
+                    case 2:
+                        newSprite = new Block(Shapes.square1_yellow);
+                        break;
+                    case 3:
+                        newSprite = new Block(Shapes.square1_red);
+                        break;
+                    case 4:
+                        newSprite = new Block(Shapes.square1_white);
+                        break;
+                    case 5:
+                        newSprite = new Block(Shapes.square1_black);
+                        break;
+                    case 6:
+                        newSprite = new Block(Shapes.square1_navy);
+                        break;
+                    case 7:
+                        newSprite = new Block(Shapes.square1_flesh);
+                        break;
+                    
+                    case 98:
+                        newSprite = new Block(Shapes.square1_floor);
+                        break;
+                }
+                newSprite->position = glm::vec3(j*(width)+position.x, l*(height)+position.y, i*(length)+position.z);
+                newSprite->scale = glm::vec3(0.5f, 0.5f, 0.5f);
+                spriteList.push_back(newSprite);
+            }
+        }
+    }
+}
