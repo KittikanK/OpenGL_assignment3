@@ -7,9 +7,11 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "${fileDirname}/*.cpp",
+                //"${fileDirname}/*.cpp",
+                "${workspaceFolder}\\*.cpp",
                 "-g",
-                "${fileDirname}/Libs/*.cpp",
+                //"${fileDirname}/Libs/*.cpp",
+                "${workspaceFolder}\\Libs\\*.cpp",
                 "-I",
                 "D:\\OpenGL\\External Libs\\GLFW\\include",
                 "-I",
@@ -24,10 +26,12 @@
                 "-l","glfw3dll",
                 "-l","opengl32",
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe"
+                //"${fileDirname}\\${fileBasenameNoExtension}.exe"
+                "${workspaceFolder}\\main.exe"
             ],
             "options": {
-                "cwd": "${fileDirname}"
+                //"cwd": "${fileDirname}"
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"

@@ -1,5 +1,5 @@
 #include "Window.h"
-
+unsigned int samples = 8;
 Window::Window()
 {
     width = 800;
@@ -36,6 +36,7 @@ int Window::initialise()
     //OpenGL version (using 3.1)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glfwMajorVersion);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glfwMinorVersion);
+    glfwWindowHint(GLFW_SAMPLES, samples);
 
     //Core Profile = No Backwards Compatibility
     glfwWindowHint(GLFW_OPENGL_ANY_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -69,6 +70,7 @@ int Window::initialise()
     }
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);
 
     //Setup Viewport size
     glViewport(0, 0, bufferWidth, bufferHeight);

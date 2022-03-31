@@ -24,11 +24,16 @@
 
 #pragma endregion
 
+#pragma region Defines
+#define AXIS_X 0
+#define AXIS_Y 1
+#define AXIS_Z 2
+#pragma endregion 
+
 #pragma region Globals
 const GLint WIDTH = 800, HEIGHT = 600;
 
 float yaw = 0.0f, pitch = 0.0f;
-
 Window mainWindow;
 std::vector<Mesh*> meshList;
 std::vector<Shader> shaderList;
@@ -37,6 +42,7 @@ std::vector<Block*> spriteList;
 static const char* vShader = "Shaders/shader.vert";
 //Fragment Shader
 static const char* fShader = "Shaders/shader.frag";
+
 #pragma endregion
 
 #pragma region DefineFunctions
@@ -48,6 +54,8 @@ template<std::size_t L, std::size_t R,std::size_t C>
 void createBlock(GLint (&myArray)[L][R][C],glm::vec3 position, glm::vec3 scale);
 template<std::size_t L, std::size_t R,std::size_t C>
 void createBlock(GLint (&myArray)[L][R][C], glm::vec3 position);
+template<std::size_t L, std::size_t R,std::size_t C>
+void createBlock(GLint (&myArray)[L][R][C], glm::vec3 position, glm::vec3 scale, int Axis, bool flipX, bool flipY, bool flipZ);
 #pragma endregion
 
 #pragma region DefineShapes
@@ -56,6 +64,9 @@ struct{
         *xyzStar,
         *square1_cyan,
         *square1_floor,
+        *square1_wall,
+        *square1_woodwall,
+        *square1_woodceiling,
 
         *square1_blue,
         *square1_yellow,
@@ -356,19 +367,46 @@ int main()
     #pragma endregion
     
     #pragma region CreateCharecter
-    createBlock(doraemon,glm::vec3(-10.0f,0.0f,0.0f),glm::vec3(1.0f));
-    createBlock(nobita,glm::vec3(0.0f,0.0f,0.0f));
+    createBlock(doraemon,glm::vec3(0.0f,1.0f,-5.0f),glm::vec3(1.0f));
+    createBlock(nobita,glm::vec3(20.0f,1.0f,0.0f),glm::vec3(1.0f),AXIS_Z,false,false,true);
     
-    int foor[1][100][100];
-    for (int i = 0; i < 30; i++)
+    int room[30][40][56];
+    for (size_t l = 0; l < 30; l++)
     {
-        for (int j = 0; j < 50; j++)
+        for (size_t r = 0; r < 40; r++)
         {
-            foor[0][i][j] = 98;
-        }
-    }
+            for (size_t c = 0; c < 56; c++)
+            {
+                room[l][r][c] = 0;
+                //foor
+                if(l<2)
+                {
+                    room[l][r][c] = 98;
+                }
+                
+                //wall
+                else if(r<3 || c>55-3)
+                {
+                    //wood
+                    if
+                    (
+                        (l>=2&&l<6) ||
+                        (l>=10&&l<11) ||
+                        (l>=25&&l<26) 
+                    ) 
+                        room[l][r][c] = 96;
 
-    createBlock(foor,glm::vec3(-10.0f,-1.0f,0.0f));
+                    else if(l>=29&&l<30) room[l][r][c] = 95;
+                    //white
+                    else room[l][r][c] = 97;
+                }
+
+            }
+        }
+    };
+    
+
+    createBlock(room,glm::vec3(0.0f,-1.0f,0.0f));
      
 
     #pragma endregion
@@ -557,6 +595,10 @@ void CreateShape()
 
     glm::vec3 cyan = HexColor2RGB(0x2ae6f7);
     glm::vec3 green_floor = HexColor2RGB(0xABCA87);
+    glm::vec3 white_wall = HexColor2RGB(0xE7E9DA);
+    glm::vec3 wood_wall = HexColor2RGB(0xB08D60);
+    glm::vec3 wood_ceiling = HexColor2RGB(0xD07634);
+
     glm::vec3 blue = HexColor2RGB(0x0176C3);
     glm::vec3 yellow = HexColor2RGB(0xE1BD42);
     glm::vec3 red = HexColor2RGB(0x9A1F22);
@@ -565,6 +607,7 @@ void CreateShape()
     glm::vec3 navy = HexColor2RGB(0x31496F);
     glm::vec3 flesh = HexColor2RGB(0xF1C27D);
     
+    
     setSquare1_Color(cyan);
     Shapes.square1_cyan = new Mesh();
     Shapes.square1_cyan->CreateMesh(square1_v, square1_i, 24*9, 12*3);
@@ -572,6 +615,19 @@ void CreateShape()
     setSquare1_Color(green_floor);
     Shapes.square1_floor = new Mesh();
     Shapes.square1_floor->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+
+    setSquare1_Color(wood_wall);
+    Shapes.square1_woodwall = new Mesh();
+    Shapes.square1_woodwall->CreateMesh(square1_v, square1_i, 24*9, 12*3); 
+
+    setSquare1_Color(wood_ceiling);
+    Shapes.square1_woodceiling = new Mesh();
+    Shapes.square1_woodceiling->CreateMesh(square1_v, square1_i, 24*9, 12*3);
+
+    
+    setSquare1_Color(white_wall);
+    Shapes.square1_wall = new Mesh();
+    Shapes.square1_wall->CreateMesh(square1_v, square1_i, 24*9, 12*3);
     
     setSquare1_Color(blue);
     Shapes.square1_blue = new Mesh();
@@ -694,6 +750,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
         pitch = -89.0f;
 }
 
+#pragma region createBlock function
 template<std::size_t L, std::size_t R,std::size_t C>
 void createBlock(GLint (&myArray)[L][R][C], glm::vec3 position, glm::vec3 scale)
 {
@@ -731,9 +788,21 @@ void createBlock(GLint (&myArray)[L][R][C], glm::vec3 position, glm::vec3 scale)
                     case 7:
                         newSprite = new Block(Shapes.square1_flesh);
                         break;
-                    
+
+                    case 95:
+                        newSprite = new Block(Shapes.square1_woodceiling);
+                        break;
+                    case 96:
+                        newSprite = new Block(Shapes.square1_woodwall);
+                        break;
+                    case 97:
+                        newSprite = new Block(Shapes.square1_wall);
+                        break;
+                    case 98:
+                        newSprite = new Block(Shapes.square1_floor);
+                        break;
                 }
-                newSprite->position = glm::vec3(j*(width)+position.x, l*(height)+position.y, i*(length)+position.z);
+                newSprite->position = glm::vec3(j*(width)+position.x, l*(height)+position.y, i*(length)+position.z-R*(length));
                 newSprite->scale = glm::vec3(0.5f*scale.x, 0.5f*scale.y, 0.5f*scale.z);
                 spriteList.push_back(newSprite);
             }
@@ -744,49 +813,111 @@ void createBlock(GLint (&myArray)[L][R][C], glm::vec3 position, glm::vec3 scale)
 template<std::size_t L, std::size_t R,std::size_t C>
 void createBlock(GLint (&myArray)[L][R][C], glm::vec3 position)
 {
-    GLfloat length = 1.0f;
-    GLfloat width = 1.0f;
-    GLfloat height = 1.0f;
-    for (int l = 0; l < L; l++)
+    createBlock(myArray, position, glm::vec3(1.0f, 1.0f, 1.0f));
+}
+
+template<std::size_t L, std::size_t R,std::size_t C>
+void flipCol(GLint (&myArray)[L][R][C])
+{
+    for(int i = 0; i < L; i++)
     {
-        for (int i = 0; i < R; i++)
+        for(int j = 0; j < R; j++)
         {
-            for (int j = 0; j < C; j++)
+            int foo = 0, bar = C - 1;
+            while(foo < bar)
             {
-                if(myArray[l][i][j] == 0) continue;
-                Block* newSprite = new Block(Shapes.square1_cyan);
-                switch(myArray[l][i][j])
-                {
-                    case 1:
-                        newSprite = new Block(Shapes.square1_blue);
-                        break;
-                    case 2:
-                        newSprite = new Block(Shapes.square1_yellow);
-                        break;
-                    case 3:
-                        newSprite = new Block(Shapes.square1_red);
-                        break;
-                    case 4:
-                        newSprite = new Block(Shapes.square1_white);
-                        break;
-                    case 5:
-                        newSprite = new Block(Shapes.square1_black);
-                        break;
-                    case 6:
-                        newSprite = new Block(Shapes.square1_navy);
-                        break;
-                    case 7:
-                        newSprite = new Block(Shapes.square1_flesh);
-                        break;
-                    
-                    case 98:
-                        newSprite = new Block(Shapes.square1_floor);
-                        break;
-                }
-                newSprite->position = glm::vec3(j*(width)+position.x, l*(height)+position.y, i*(length)+position.z);
-                newSprite->scale = glm::vec3(0.5f, 0.5f, 0.5f);
-                spriteList.push_back(newSprite);
+                std::swap(myArray[i][j][foo], myArray[i][j][bar]);
+                foo++;
+                bar--;
             }
         }
     }
 }
+template<std::size_t L, std::size_t R,std::size_t C>
+void flipRow(GLint (&myArray)[L][R][C])
+{
+    for(int l = 0; l < L; l++)
+    {
+        int foo = 0, bar = R - 1;
+        while(foo < bar)
+        {
+            std::swap(myArray[l][foo], myArray[l][bar]);
+            foo++;
+            bar--;
+        }
+    }
+}
+
+template<std::size_t L, std::size_t R,std::size_t C>
+void flipLayer(GLint (&myArray)[L][R][C])
+{
+    int foo = 0, bar = L - 1;
+    while(foo < bar)
+    {
+        std::swap(myArray[foo], myArray[bar]);
+        foo++;
+        bar--;
+    }
+
+}
+
+template<std::size_t L, std::size_t R,std::size_t C>
+void createBlock(GLint (&myArray)[L][R][C], glm::vec3 position, glm::vec3 scale, int Axis, bool flipX, bool flipY, bool flipZ)
+{
+    switch(Axis)
+    {
+        case 0:
+            GLint newArray0[L][R][C];
+            for(int i = 0; i < L; i++)
+            {
+                for(int j = 0; j < R; j++)
+                {
+                    for(int k = 0; k < C; k++)
+                    {
+                        newArray0[i][j][k] = myArray[i][j][k];
+                    }
+                }
+            }
+            if(flipZ) flipCol(newArray0);
+            if(flipX) flipRow(newArray0);
+            if(flipY) flipLayer(newArray0);
+            createBlock(newArray0, position, scale);
+            break;
+        case 1:
+            GLint newArray1[R][L][C];
+            for(int i = 0; i < R; i++)
+            {
+                for(int j = 0; j < L; j++)
+                {
+                    for(int k = 0; k < C; k++)
+                    {
+                        newArray1[i][j][k] = myArray[j][i][k];
+                    }
+                }
+            }
+            if(flipZ) flipCol(newArray1);
+            if(flipX) flipRow(newArray1);
+            if(flipY) flipLayer(newArray1);
+            createBlock(newArray1, position, scale);
+            break;
+        case 2:   
+            GLint newArray2[L][C][R];
+            for(int i = 0; i < L; i++)
+            {
+                for(int j = 0; j < C; j++)
+                {
+                    for(int k = 0; k < R; k++)
+                    {
+                        newArray2[i][j][k] = myArray[i][k][j];
+                    }
+                }
+            }
+            if(flipZ) flipCol(newArray2);
+            if(flipX) flipRow(newArray2);
+            if(flipY) flipLayer(newArray2);
+            createBlock(newArray2, position, scale);
+            break;
+    }
+}
+
+#pragma endregion createBlock
