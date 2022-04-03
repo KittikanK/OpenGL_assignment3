@@ -15,7 +15,7 @@
 class Block
 {
 public:
-    Block(Mesh* shape);
+    Block(Mesh* shape, unsigned int text);
     ~Block();
 
     void Draw(GLuint uniformModel);
@@ -25,4 +25,5 @@ public:
     glm::vec3 scale;
 private:
     Mesh* mesh;
+    unsigned int texture;
 };

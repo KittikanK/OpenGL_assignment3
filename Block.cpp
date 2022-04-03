@@ -1,8 +1,9 @@
 #include "Block.h"
 
-Block::Block(Mesh* shape)
+Block::Block(Mesh* shape, unsigned int text)
 {
     mesh = shape;
+    texture = text;
     
     position = glm::vec3(0.0f, 0.0f, 0.0f);
     rotation = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -23,6 +24,9 @@ void Block::Draw(GLuint uniformModel)
     model = glm::rotate(model, rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
     model = glm::scale(model, scale);
     glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
 
     mesh->RenderMesh();
     

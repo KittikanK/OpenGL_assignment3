@@ -12,6 +12,8 @@
                 "-g",
                 //"${fileDirname}/Libs/*.cpp",
                 "${workspaceFolder}\\Libs\\*.cpp",
+                "-g",
+                "${workspaceFolder}\\util\\*.cpp",
                 "-I",
                 "D:\\OpenGL\\External Libs\\GLFW\\include",
                 "-I",
